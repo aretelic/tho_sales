@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consultation Intelligence — Review &amp; Extract</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FAFAF8;
+  --surface: #FFFFFF;
+  --surface-2: #F5F4F0;
+  --surface-3: #EEEDEA;
+  --border: #E0DFD9;
+  --border-2: #D0CFC8;
+  --text: #1A1A18;
+  --text-2: #5C5B56;
+  --text-3: #8A8983;
+  --accent: #2D5A27;
+  --accent-light: #EFF6EE;
+  --accent-2: #B8860B;
+  --accent-2-light: #FDF6E3;
+  --red: #9B2C2C;
+  --red-light: #FFF5F5;
+  --blue: #2B4C7E;
+  --blue-light: #EFF3F9;
+  --purple: #5B3A8C;
+  --purple-light: #F5F0FA;
+  --amber: #92600F;
+  --amber-light: #FFFBEB;
+  --font: 'DM Sans', -apple-system, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* LAYOUT */
+.app { max-width: 1280px; margin: 0 auto; padding: 24px 32px; }
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 0 24px;
+  border-bottom: 2px solid var(--text);
+  margin-bottom: 32px;
+}
+.header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+.header-meta { font-size: 13px; color: var(--text-2); }
+
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--surface-3);
+  border-radius: var(--radius);
+  padding: 3px;
+  margin-bottom: 28px;
+  width: fit-content;
+}
+.tab {
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* LOAD SECTION */
+.load-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  margin-bottom: 28px;
+}
+.load-section h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.load-section p { color: var(--text-2); margin-bottom: 16px; font-size: 13px; }
+
+textarea.json-input {
+  width: 100%;
+  height: 160px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  resize: vertical;
+  line-height: 1.5;
+}
+textarea.json-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+
+.btn {
+  padding: 8px 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text);
+}
+.btn:hover { background: var(--surface-2); }
+.btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+.btn-primary:hover { background: #234A1E; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-approve { color: var(--accent); border-color: var(--accent); }
+.btn-approve:hover { background: var(--accent-light); }
+.btn-reject { color: var(--red); border-color: var(--red); }
+.btn-reject:hover { background: var(--red-light); }
+.btn-ghost { border-color: transparent; color: var(--text-2); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+
+.error-msg { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
+
+/* META CARD */
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.meta-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.meta-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-3); margin-bottom: 4px; }
+.meta-card .value { font-size: 16px; font-weight: 600; }
+.meta-card .value.outcome-closed { color: var(--accent); }
+.meta-card .value.outcome-lost { color: var(--red); }
+
+/* SCORECARD */
+.framework-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.framework-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.framework-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.framework-card-header h3 { font-size: 14px; font-weight: 600; }
+.framework-score {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+.score-high { background: var(--accent-light); color: var(--accent); }
+.score-mid { background: var(--amber-light); color: var(--amber); }
+.score-low { background: var(--red-light); color: var(--red); }
+
+.criterion-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--surface-2);
+  gap: 12px;
+}
+.criterion-row:last-child { border-bottom: none; }
+.criterion-name { font-weight: 500; min-width: 120px; font-size: 13px; }
+.criterion-score {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  min-width: 40px;
+  text-align: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+.criterion-just { font-size: 12px; color: var(--text-2); flex: 1; }
+
+/* COMPOSITE */
+.composite-bar-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 28px;
+}
+.composite-bar-wrap h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.composite-row { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+.composite-label { font-size: 12px; font-weight: 500; min-width: 90px; }
+.composite-track { flex: 1; height: 8px; background: var(--surface-3); border-radius: 4px; overflow: hidden; }
+.composite-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+.composite-pct { font-family: var(--font-mono); font-size: 12px; min-width: 42px; text-align: right; }
+
+/* EXTRACTION SECTION */
+.extraction-section { margin-bottom: 32px; }
+.extraction-section h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.extraction-section > p { color: var(--text-2); font-size: 13px; margin-bottom: 16px; }
+
+.category-block { margin-bottom: 24px; }
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+.category-header h3 { font-size: 15px; font-weight: 600; }
+.category-count {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.category-desc { font-size: 12px; color: var(--text-3); margin-bottom: 10px; }
+
+.extraction-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 8px;
+  position: relative;
+  transition: border-color 0.15s, opacity 0.3s;
+}
+.extraction-card.approved { border-left: 3px solid var(--accent); }
+.extraction-card.rejected { opacity: 0.4; border-left: 3px solid var(--border); }
+.extraction-card .insight { font-size: 14px; font-weight: 500; margin-bottom: 8px; line-height: 1.5; }
+.extraction-card .quote {
+  font-size: 12px;
+  color: var(--text-2);
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  border-left: 2px solid var(--border-2);
+  line-height: 1.5;
+}
+.extraction-card .quote em { font-style: normal; font-weight: 500; color: var(--text); }
+.extraction-card .meta-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+.tag-high { background: var(--accent-light); color: var(--accent); }
+.tag-medium { background: var(--amber-light); color: var(--amber); }
+.tag-low { background: var(--surface-3); color: var(--text-3); }
+.tag-asked { background: var(--blue-light); color: var(--blue); }
+.tag-missed { background: var(--red-light); color: var(--red); }
+
+.suggested-use { font-size: 12px; color: var(--text-2); margin-bottom: 10px; }
+.suggested-use strong { color: var(--text); font-weight: 500; }
+
+.card-actions { display: flex; gap: 6px; }
+
+/* CASE STUDY */
+.case-study-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.case-study-card-header {
+  padding: 20px 24px;
+  background: var(--accent);
+  color: white;
+}
+.case-study-card-header h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
+.case-study-card-header p { font-size: 12px; opacity: 0.8; margin-top: 4px; }
+.case-study-body { padding: 24px; }
+.cs-field { margin-bottom: 20px; }
+.cs-field .cs-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+.cs-field .cs-value { font-size: 14px; line-height: 1.6; }
+.cs-field .cs-value.headline {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.cs-field .cs-value.quote-block {
+  padding: 12px 16px;
+  background: var(--accent-light);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--accent);
+  font-style: italic;
+}
+
+/* COLLECTIONS */
+.collections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+.collection-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.collection-card-header {
+  padding: 14px 18px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.collection-card-header h3 { font-size: 14px; font-weight: 600; }
+.collection-item {
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--surface-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.collection-item:last-child { border-bottom: none; }
+.collection-item .source { font-size: 11px; color: var(--text-3); margin-top: 3px; }
+.collection-empty { padding: 24px 18px; text-align: center; color: var(--text-3); font-size: 13px; }
+
+/* PROMPT PANEL */
+.prompt-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+.prompt-panel h2 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.prompt-panel > p { color: var(--text-2); font-size: 13px; margin-bottom: 16px; }
+.prompt-display {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  padding: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-height: 500px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* SUMMARY */
+.summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.summary-card h3 { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+.summary-card p { font-size: 14px; color: var(--text-2); line-height: 1.7; }
+
+.improvements-list { list-style: none; }
+.improvements-list li {
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+}
+.improvements-list li .imp-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.improvements-list li .imp-desc { font-size: 13px; color: var(--text-2); }
+.improvements-list li .imp-priority { display: inline-block; margin-top: 6px; }
+
+/* EMPTY STATE */
+.empty-state {
+  text-align: center;
+  padding: 80px 40px;
+  color: var(--text-3);
+}
+.empty-state h2 { font-family: var(--font-display); font-size: 22px; color: var(--text-2); margin-bottom: 8px; }
+.empty-state p { font-size: 14px; max-width: 500px; margin: 0 auto; }
+
+/* TOAST */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 1000; }
+.toast {
+  background: var(--text);
+  color: white;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 8px;
+  animation: toast-in 0.3s ease, toast-out 0.3s ease 2.2s forwards;
+  box-shadow: var(--shadow-lg);
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .app { padding: 16px; }
+  .header { flex-direction: column; gap: 4px; }
+  .framework-grid { grid-template-columns: 1fr; }
+  .collections-grid { grid-template-columns: 1fr; }
+  .meta-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>Consultation Intelligence</h1>
+    <span class="header-meta">Review &amp; Extract Tool — v0.1</span>
+  </div>
+
+  <div class="tabs" id="mainTabs">
+    <button class="tab active" data-tab="load">Load</button>
+    <button class="tab" data-tab="scorecard">Scorecard</button>
+    <button class="tab" data-tab="extractions">Extractions</button>
+    <button class="tab" data-tab="casestudy">Case Study</button>
+    <button class="tab" data-tab="collections">Collections</button>
+    <button class="tab" data-tab="prompt">Prompt</button>
+  </div>
+
+  <!-- LOAD TAB -->
+  <div class="tab-panel active" id="panel-load">
+    <div class="load-section">
+      <h2>Load Analysis JSON</h2>
+      <p>Paste the JSON output from the analysis prompt, or load the demo data to explore the tool. The JSON should match the schema defined in the prompt template.</p>
+      <textarea class="json-input" id="jsonInput" placeholder='Paste your analysis JSON here...'></textarea>
+      <div class="error-msg" id="jsonError"></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="loadJSON()">Load Analysis</button>
+        <button class="btn" onclick="loadDemo()">Load Demo Data</button>
+        <button class="btn btn-ghost" onclick="clearAll()">Clear All</button>
+      </div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <h2>No analysis loaded</h2>
+      <p>Paste your analysis JSON above, or click "Load Demo Data" to see the tool in action with sample data from the Jo Pyshorn consultation.</p>
+    </div>
+  </div>
+
+  <!-- SCORECARD TAB -->
+  <div class="tab-panel" id="panel-scorecard">
+    <div id="scorecardContent"></div>
+  </div>
+
+  <!-- EXTRACTIONS TAB -->
+  <div class="tab-panel" id="panel-extractions">
+    <div class="extraction-section">
+      <h2>Extracted Intelligence</h2>
+      <p>Review each item below. Approve items to add them to your collections for use in marketing, scripts, and training. Reject to dismiss.</p>
+      <div class="btn-row" style="margin-bottom: 20px;">
+        <button class="btn btn-sm btn-approve" onclick="approveAllVisible()">Approve All Visible</button>
+        <button class="btn btn-sm btn-ghost" onclick="resetAllDecisions()">Reset Decisions</button>
+      </div>
+      <div id="extractionsContent"></div>
+    </div>
+  </div>
+
+  <!-- CASE STUDY TAB -->
+  <div class="tab-panel" id="panel-casestudy">
+    <div id="casestudyContent"></div>
+  </div>
+
+  <!-- COLLECTIONS TAB -->
+  <div class="tab-panel" id="panel-collections">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <h2 style="font-family: var(--font-display); font-size: 20px; font-weight: 600;">Approved Collections</h2>
+        <p style="color: var(--text-2); font-size: 13px;">Items you've approved from the extractions tab, grouped by category.</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-sm" onclick="exportCollections('json')">Export JSON</button>
+        <button class="btn btn-sm" onclick="exportCollections('csv')">Export CSV</button>
+      </div>
+    </div>
+    <div class="collections-grid" id="collectionsContent"></div>
+  </div>
+
+  <!-- PROMPT TAB -->
+  <div class="tab-panel" id="panel-prompt">
+    <div class="prompt-panel">
+      <h2>Analysis Prompt Template</h2>
+      <p>Copy this prompt and paste it into Claude along with your consultation transcript. It will return structured JSON that you can load into the "Load" tab.</p>
+      <div class="btn-row" style="margin-bottom: 16px;">
+        <button class="btn btn-primary btn-sm" onclick="copyPrompt()">Copy Prompt to Clipboard</button>
+      </div>
+      <div class="prompt-display" id="promptDisplay"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// =========================================================
+// STATE
+// =========================================================
+let analysisData = null;
+let decisions = {}; // { "category:index": "approved" | "rejected" }
+
+const CATEGORY_META = {
+  catalysts: { label: "Catalysts & Triggers", color: "var(--accent-2)", desc: "Life events that prompted the client to seek help. Use in marketing targeting and ad copy." },
+  friction_points: { label: "Friction Points", color: "var(--red)", desc: "Current pain, frustration, or dysfunction. Use in website copy, landing pages, and consultation scripts." },
+  objections_and_fears: { label: "Objections & Fears", color: "var(--amber)", desc: "Concerns about the process, cost, or outcome. Address these on the website FAQ and during consultations." },
+  emotional_drivers: { label: "Emotional Drivers", color: "var(--purple)", desc: "Deeper emotional motivations behind the purchase. Use in positioning and brand messaging." },
+  positioning_insights: { label: "Positioning Insights", color: "var(--blue)", desc: "How the service should be differentiated and described, often revealed by how clients describe failed alternatives." },
+  case_study_moments: { label: "Case Study Moments", color: "var(--accent)", desc: "Before/after contrasts and vivid scenarios that work in testimonials and case studies." },
+  discovery_questions: { label: "Discovery Questions", color: "var(--blue)", desc: "Effective questions asked, or opportunities missed. Build into the consultation template." },
+  social_proof_opportunities: { label: "Social Proof Opportunities", color: "var(--accent-2)", desc: "Moments revealing referral potential or social proof angles." },
+  upsell_signals: { label: "Upsell Signals", color: "var(--purple)", desc: "Needs beyond the immediate scope that could lead to additional engagements." },
+  client_language: { label: "Client Language", color: "var(--text-2)", desc: "Specific phrases and metaphors the client used — mirror these in marketing copy." }
+};
+
+// =========================================================
+// TABS
+// =========================================================
+document.getElementById('mainTabs').addEventListener('click', function(e) {
+  if (!e.target.classList.contains('tab')) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('panel-' + e.target.dataset.tab).classList.add('active');
+  if (e.target.dataset.tab === 'collections') renderCollections();
+});
+
+// =========================================================
+// LOAD / PARSE
+// =========================================================
+function loadJSON() {
+  const input = document.getElementById('jsonInput').value.trim();
+  const err = document.getElementById('jsonError');
+  err.style.display = 'none';
+  if (!input) { err.textContent = 'Please paste JSON first.'; err.style.display = 'block'; return; }
+  try {
+    analysisData = JSON.parse(input);
+    decisions = {};
+    renderAll();
+    toast('Analysis loaded successfully');
+    switchTab('scorecard');
+  } catch (e) {
+    err.textContent = 'Invalid JSON: ' + e.message;
+    err.style.display = 'block';
+  }
+}
+
+function loadDemo() {
+  analysisData = getDemoData();
+  decisions = {};
+  renderAll();
+  toast('Demo data loaded');
+  switchTab('scorecard');
+}
+
+function clearAll() {
+  analysisData = null;
+  decisions = {};
+  document.getElementById('jsonInput').value = '';
+  document.getElementById('scorecardContent').innerHTML = '';
+  document.getElementById('extractionsContent').innerHTML = '';
+  document.getElementById('casestudyContent').innerHTML = '';
+  document.getElementById('collectionsContent').innerHTML = '';
+  document.getElementById('emptyState').style.display = 'block';
+  switchTab('load');
+  toast('Cleared');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => { t.classList.toggle('active', t.dataset.tab === name); });
+  document.querySelectorAll('.tab-panel').forEach(p => { p.classList.toggle('active', p.id === 'panel-' + name); });
+}
+
+// =========================================================
+// RENDER ALL
+// =========================================================
+function renderAll() {
+  if (!analysisData) return;
+  document.getElementById('emptyState').style.display = 'none';
+  renderScorecard();
+  renderExtractions();
+  renderCaseStudy();
+  renderCollections();
+  renderPrompt();
+}
+
+// =========================================================
+// SCORECARD
+// =========================================================
+function renderScorecard() {
+  const d = analysisData;
+  const m = d.consultation_meta;
+  const fs = d.framework_scores;
+
+  let html = '';
+
+  // Meta cards
+  html += '<div class="meta-grid">';
+  html += metaCard('Client', m.client_name);
+  html += metaCard('Date', m.date);
+  html += metaCard('Consultant', m.consultant_name);
+  html += metaCard('Duration', m.duration_minutes + ' mins');
+  html += metaCard('Outcome', m.outcome, m.outcome === 'closed' ? 'outcome-closed' : m.outcome === 'lost' ? 'outcome-lost' : '');
+  html += metaCard('Value', m.deal_value);
+  html += '</div>';
+
+  // Summary
+  if (d.executive_summary) {
+    html += '<div class="summary-card"><h3>Executive Summary</h3><p>' + esc(d.executive_summary) + '</p></div>';
+  }
+
+  // Composite bar chart
+  html += '<div class="composite-bar-wrap"><h3>Framework Scores</h3>';
+  const frameworks = [
+    { key: 'bant', label: 'BANT', data: fs.bant },
+    { key: 'spin', label: 'SPIN', data: fs.spin },
+    { key: 'neat', label: 'NEAT', data: fs.neat },
+    { key: 'challenger', label: 'Challenger', data: fs.challenger },
+    { key: 'jtbd', label: 'JTBD', data: fs.jtbd },
+    { key: 'sandler_pain', label: 'Sandler Pain', data: fs.sandler_pain }
+  ];
+  for (const f of frameworks) {
+    if (!f.data) continue;
+    const pct = Math.round((f.data.total / f.data.max) * 100);
+    const col = pct >= 70 ? 'var(--accent)' : pct >= 50 ? 'var(--accent-2)' : 'var(--red)';
+    html += `<div class="composite-row">
+      <span class="composite-label">${f.label}</span>
+      <div class="composite-track"><div class="composite-fill" style="width:${pct}%;background:${col}"></div></div>
+      <span class="composite-pct">${pct}%</span>
+    </div>`;
+  }
+  if (fs.composite) {
+    html += `<div class="composite-row" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);">
+      <span class="composite-label" style="font-weight:700;">Composite</span>
+      <div class="composite-track"><div class="composite-fill" style="width:${fs.composite.percentage}%;background:var(--text)"></div></div>
+      <span class="composite-pct" style="font-weight:700;">${fs.composite.percentage}%</span>
+    </div>`;
+  }
+  html += '</div>';
+
+  // Framework detail cards
+  html += '<div class="framework-grid">';
+  for (const f of frameworks) {
+    if (!f.data) continue;
+    html += renderFrameworkCard(f.label, f.data);
+  }
+  html += '</div>';
+
+  // Top improvements
+  if (d.top_3_improvements && d.top_3_improvements.length) {
+    html += '<div class="summary-card"><h3>Top Improvements</h3><ul class="improvements-list">';
+    for (const imp of d.top_3_improvements) {
+      html += `<li>
+        <div class="imp-title">${esc(imp.title)}</div>
+        <div class="imp-desc">${esc(imp.description)}</div>
+        <span class="tag imp-priority ${imp.priority === 'high' ? 'tag-high' : imp.priority === 'medium' ? 'tag-medium' : 'tag-low'}">${imp.priority}</span>
+      </li>`;
+    }
+    html += '</ul></div>';
+  }
+
+  document.getElementById('scorecardContent').innerHTML = html;
+}
+
+function renderFrameworkCard(name, data) {
+  const pct = Math.round((data.total / data.max) * 100);
+  const scoreClass = pct >= 70 ? 'score-high' : pct >= 50 ? 'score-mid' : 'score-low';
+  let rows = '';
+  for (const [key, val] of Object.entries(data)) {
+    if (key === 'total' || key === 'max') continue;
+    if (typeof val === 'object' && val.score !== undefined) {
+      rows += `<div class="criterion-row">
+        <span class="criterion-name">${formatKey(key)}</span>
+        <span class="criterion-score">${val.score}/10</span>
+        <span class="criterion-just">${esc(val.justification || val.identified_job || '')}</span>
+      </div>`;
+    }
+  }
+  return `<div class="framework-card">
+    <div class="framework-card-header">
+      <h3>${name}</h3>
+      <span class="framework-score ${scoreClass}">${data.total}/${data.max} (${pct}%)</span>
+    </div>
+    ${rows}
+  </div>`;
+}
+
+// =========================================================
+// EXTRACTIONS
+// =========================================================
+function renderExtractions() {
+  let html = '';
+  const ext = analysisData.extractions;
+  for (const [cat, items] of Object.entries(ext)) {
+    if (!items || !items.length) continue;
+    const meta = CATEGORY_META[cat] || { label: formatKey(cat), color: 'var(--text-2)', desc: '' };
+    html += `<div class="category-block">
+      <div class="category-header">
+        <h3 style="color: ${meta.color}">${meta.label}</h3>
+        <span class="category-count">${items.length}</span>
+      </div>
+      <div class="category-desc">${meta.desc}</div>`;
+    items.forEach((item, i) => {
+      const key = cat + ':' + i;
+      const state = decisions[key] || 'pending';
+      html += `<div class="extraction-card ${state}" id="card-${key}" data-key="${key}">
+        <div class="insight">${esc(item.insight)}</div>
+        ${item.quote ? `<div class="quote"><em>${esc(item.speaker || 'Client')}:</em> "${esc(item.quote)}"</div>` : ''}
+        <div class="meta-row">
+          ${item.confidence ? `<span class="tag tag-${item.confidence}">${item.confidence} confidence</span>` : ''}
+          ${item.status ? `<span class="tag tag-${item.status}">${item.status}</span>` : ''}
+        </div>
+        ${item.suggested_use ? `<div class="suggested-use"><strong>Use:</strong> ${esc(item.suggested_use)}</div>` : ''}
+        <div class="card-actions">
+          <button class="btn btn-sm btn-approve" onclick="decide('${key}','approved')">✓ Approve</button>
+          <button class="btn btn-sm btn-reject" onclick="decide('${key}','rejected')">✗ Reject</button>
+          ${state !== 'pending' ? `<button class="btn btn-sm btn-ghost" onclick="decide('${key}','pending')">Reset</button>` : ''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  document.getElementById('extractionsContent').innerHTML = html;
+}
+
+function decide(key, state) {
+  decisions[key] = state;
+  const card = document.getElementById('card-' + key);
+  if (card) {
+    card.className = 'extraction-card ' + state;
+    // Re-render to update reset button
+    renderExtractions();
+  }
+  updateCollectionCount();
+}
+
+function approveAllVisible() {
+  const ext = analysisData.extractions;
+  for (const [cat, items] of Object.entries(ext)) {
+    if (!items) continue;
+    items.forEach((_, i) => { decisions[cat + ':' + i] = 'approved'; });
+  }
+  renderExtractions();
+  updateCollectionCount();
+  toast('All items approved');
+}
+
+function resetAllDecisions() {
+  decisions = {};
+  renderExtractions();
+  updateCollectionCount();
+  toast('All decisions reset');
+}
+
+function updateCollectionCount() {
+  const count = Object.values(decisions).filter(d => d === 'approved').length;
+  // Could update a badge here
+}
+
+// =========================================================
+// CASE STUDY
+// =========================================================
+function renderCaseStudy() {
+  const cs = analysisData.case_study_draft;
+  if (!cs) { document.getElementById('casestudyContent').innerHTML = '<div class="empty-state"><h2>No case study draft</h2><p>The analysis did not include a case study draft.</p></div>'; return; }
+
+  let html = `<div class="case-study-card">
+    <div class="case-study-card-header">
+      <h3>Case Study Draft</h3>
+      <p>Starting point — edit and refine before use. Always get client approval.</p>
+    </div>
+    <div class="case-study-body">
+      ${csField('Headline', cs.headline, 'headline')}
+      ${csField('Client Situation', cs.client_situation)}
+      ${csField('Catalyst', cs.catalyst)}
+      ${csField('Challenge', cs.challenge)}
+      ${csField('Approach', cs.approach)}
+      ${cs.key_quote ? csField('Key Quote', cs.key_quote, 'quote-block') : ''}
+      ${csField('Outcome', cs.outcome)}
+      ${csField('Call to Action', cs.call_to_action)}
+    </div>
+  </div>
+  <div class="btn-row" style="margin-top: 12px;">
+    <button class="btn btn-sm" onclick="copyCaseStudy()">Copy as Text</button>
+  </div>`;
+  document.getElementById('casestudyContent').innerHTML = html;
+}
+
+function csField(label, value, cls) {
+  if (!value) return '';
+  return `<div class="cs-field"><div class="cs-label">${label}</div><div class="cs-value ${cls || ''}">${esc(value)}</div></div>`;
+}
+
+function copyCaseStudy() {
+  const cs = analysisData.case_study_draft;
+  const text = `${cs.headline}\n\n` +
+    `SITUATION: ${cs.client_situation}\n\n` +
+    `CATALYST: ${cs.catalyst}\n\n` +
+    `CHALLENGE: ${cs.challenge}\n\n` +
+    `APPROACH: ${cs.approach}\n\n` +
+    `"${cs.key_quote}"\n\n` +
+    `OUTCOME: ${cs.outcome}\n\n` +
+    `${cs.call_to_action}`;
+  copyToClipboard(text);
+  toast('Case study copied');
+}
+
+// =========================================================
+// COLLECTIONS
+// =========================================================
+function renderCollections() {
+  if (!analysisData) { document.getElementById('collectionsContent').innerHTML = ''; return; }
+  const approved = getApprovedItems();
+  let html = '';
+  let hasAny = false;
+
+  for (const [cat, items] of Object.entries(approved)) {
+    if (!items.length) continue;
+    hasAny = true;
+    const meta = CATEGORY_META[cat] || { label: formatKey(cat) };
+    html += `<div class="collection-card">
+      <div class="collection-card-header">
+        <h3>${meta.label}</h3>
+        <span class="category-count">${items.length}</span>
+      </div>`;
+    for (const item of items) {
+      html += `<div class="collection-item">
+        ${esc(item.insight)}
+        ${item.quote ? `<div class="source">"${esc(item.quote.substring(0, 80))}${item.quote.length > 80 ? '...' : ''}"</div>` : ''}
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  if (!hasAny) {
+    html = '<div class="empty-state" style="grid-column: 1 / -1;"><h2>No approved items yet</h2><p>Go to the Extractions tab and approve items to build your collections.</p></div>';
+  }
+  document.getElementById('collectionsContent').innerHTML = html;
+}
+
+function getApprovedItems() {
+  const result = {};
+  if (!analysisData) return result;
+  for (const [cat, items] of Object.entries(analysisData.extractions)) {
+    result[cat] = [];
+    if (!items) continue;
+    items.forEach((item, i) => {
+      if (decisions[cat + ':' + i] === 'approved') {
+        result[cat].push({ ...item, _source: analysisData.consultation_meta.client_name + ' — ' + analysisData.consultation_meta.date });
+      }
+    });
+  }
+  return result;
+}
+
+function exportCollections(format) {
+  const approved = getApprovedItems();
+  if (format === 'json') {
+    const blob = new Blob([JSON.stringify(approved, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, 'collections_export.json');
+    toast('JSON exported');
+  } else if (format === 'csv') {
+    let csv = 'Category,Insight,Quote,Speaker,Confidence,Suggested Use,Source\n';
+    for (const [cat, items] of Object.entries(approved)) {
+      for (const item of items) {
+        csv += `"${cat}","${csvEsc(item.insight)}","${csvEsc(item.quote || '')}","${csvEsc(item.speaker || '')}","${item.confidence || ''}","${csvEsc(item.suggested_use || '')}","${csvEsc(item._source || '')}"\n`;
+      }
+    }
+    const blob = new Blob([csv], { type: 'text/csv' });
+    downloadBlob(blob, 'collections_export.csv');
+    toast('CSV exported');
+  }
+}
+
+// =========================================================
+// PROMPT DISPLAY
+// =========================================================
+function renderPrompt() {
+  const promptText = getPromptTemplate();
+  document.getElementById('promptDisplay').textContent = promptText;
+}
+
+function copyPrompt() {
+  copyToClipboard(getPromptTemplate());
+  toast('Prompt copied to clipboard');
+}
+
+function getPromptTemplate() {
+  return `You are a sales consultation analyst for a B2C home services company. You review recorded consultation transcripts and extract structured intelligence for sales coaching, marketing positioning, and client workflow improvement.
+
+Your analysis must be thorough, objective, and consistent. You will score against multiple frameworks, extract actionable items into defined categories, and output everything as valid JSON.
+
+## FRAMEWORKS TO SCORE
+
+Score each framework criterion on a scale of 1-10. Provide a brief justification for each score.
+
+### 1. BANT (Budget, Authority, Need, Timeline)
+Standard qualification. In B2C context, "Authority" means: is this the decision-maker and payer?
+
+### 2. SPIN (Situation, Problem, Implication, Need-Payoff)
+Assess the consultant's questioning technique across all four phases.
+
+### 3. NEAT (Need, Economic Impact, Access to Authority, Timeline)
+Modern evolution of BANT. "Economic Impact" is critical — did the consultant quantify the cost of inaction or the value of the outcome? In B2C home services, this might be: stress reduction, time saved, ability to use rooms/items, avoiding duplicate purchases, etc.
+
+### 4. Challenger Sale (Teach, Tailor, Take Control)
+Did the consultant offer new insights, adapt to the client's situation, and maintain control of the conversation flow?
+
+### 5. Jobs To Be Done (Functional Job, Emotional Job, Social Job)
+B2C-specific. What is the client "hiring" this service to do?
+- Functional: the practical task (declutter kitchen, prepare for renovation)
+- Emotional: how they want to feel (in control, unburdened, at peace)
+- Social: how they want to be perceived or how it affects relationships (not judged as a hoarder, proud of their home when people visit)
+Score how well the consultant identified and addressed each job dimension.
+
+### 6. Sandler Pain Funnel (Surface Pain → Impact → Personal Impact → Emotional Weight)
+Did the consultant move beyond surface-level problems to uncover the deeper personal and emotional impact? In B2C home services, surface pain might be "too much stuff" but the deeper pain is often grief, loss of identity, fear of ageing, or loss of control.
+
+## EXTRACTION CATEGORIES
+
+Extract specific items from the transcript into these categories. For each item, include:
+- The extracted insight (your summary)
+- A direct quote from the transcript that supports it (verbatim, attribute to speaker)
+- A confidence score (high/medium/low) indicating how clearly this was expressed
+- A suggested action or use case for this insight
+
+### Categories:
+
+**catalysts**: Life events or triggers that prompted the client to seek help. These are marketing gold — they tell you WHEN to reach people.
+
+**friction_points**: Things that are currently causing the client pain, frustration, or dysfunction. These inform website copy, ad copy, and consultation scripts.
+
+**objections_and_fears**: Concerns the client expressed (or implied) about the process, cost, or outcome. These need to be addressed in marketing and during consultations.
+
+**emotional_drivers**: The deeper emotional motivations behind the purchase. These are the "real" reasons someone buys.
+
+**positioning_insights**: Things the client said that reveal how the service should be positioned, differentiated, or described. Often found in how they describe failed alternatives.
+
+**case_study_moments**: Specific before/after contrasts, vivid descriptions, or relatable scenarios that would work in marketing case studies or testimonials. Include both current-state pain and desired future-state.
+
+**discovery_questions**: Questions the consultant asked that were particularly effective, OR questions they should have asked based on missed opportunities. Tag each as "asked" or "missed".
+
+**social_proof_opportunities**: Moments where the client mentioned others (friends, family, cleaner, etc.) in ways that suggest referral potential or social proof angles.
+
+**upsell_signals**: Moments where the client described needs beyond the immediate scope that could lead to additional engagements.
+
+**client_language**: Specific phrases, metaphors, or descriptions the client used that should be reflected in marketing copy. Clients describe their problems better than marketers do.
+
+## OUTPUT FORMAT
+
+Return ONLY valid JSON in the following structure. No markdown, no commentary outside the JSON.
+
+{
+  "consultation_meta": {
+    "client_name": "",
+    "date": "",
+    "consultant_name": "",
+    "duration_minutes": 0,
+    "outcome": "closed | lost | follow_up_required",
+    "deal_value": "",
+    "deal_summary": ""
+  },
+  "framework_scores": {
+    "bant": {
+      "budget": { "score": 0, "justification": "" },
+      "authority": { "score": 0, "justification": "" },
+      "need": { "score": 0, "justification": "" },
+      "timeline": { "score": 0, "justification": "" },
+      "total": 0,
+      "max": 40
+    },
+    "spin": {
+      "situation": { "score": 0, "justification": "" },
+      "problem": { "score": 0, "justification": "" },
+      "implication": { "score": 0, "justification": "" },
+      "need_payoff": { "score": 0, "justification": "" },
+      "total": 0,
+      "max": 40
+    },
+    "neat": {
+      "need": { "score": 0, "justification": "" },
+      "economic_impact": { "score": 0, "justification": "" },
+      "access_to_authority": { "score": 0, "justification": "" },
+      "timeline": { "score": 0, "justification": "" },
+      "total": 0,
+      "max": 40
+    },
+    "challenger": {
+      "teach": { "score": 0, "justification": "" },
+      "tailor": { "score": 0, "justification": "" },
+      "take_control": { "score": 0, "justification": "" },
+      "total": 0,
+      "max": 30
+    },
+    "jtbd": {
+      "functional_job": { "score": 0, "identified_job": "", "justification": "" },
+      "emotional_job": { "score": 0, "identified_job": "", "justification": "" },
+      "social_job": { "score": 0, "identified_job": "", "justification": "" },
+      "total": 0,
+      "max": 30
+    },
+    "sandler_pain": {
+      "surface_pain": { "score": 0, "justification": "" },
+      "impact": { "score": 0, "justification": "" },
+      "personal_impact": { "score": 0, "justification": "" },
+      "emotional_weight": { "score": 0, "justification": "" },
+      "total": 0,
+      "max": 40
+    },
+    "composite": {
+      "total": 0,
+      "max": 220,
+      "percentage": 0
+    }
+  },
+  "extractions": {
+    "catalysts": [],
+    "friction_points": [],
+    "objections_and_fears": [],
+    "emotional_drivers": [],
+    "positioning_insights": [],
+    "case_study_moments": [],
+    "discovery_questions": [],
+    "social_proof_opportunities": [],
+    "upsell_signals": [],
+    "client_language": []
+  },
+  "executive_summary": "",
+  "top_3_improvements": [
+    { "title": "", "description": "", "priority": "high | medium | low" }
+  ],
+  "case_study_draft": {
+    "headline": "",
+    "client_situation": "",
+    "catalyst": "",
+    "challenge": "",
+    "approach": "",
+    "key_quote": "",
+    "outcome": "",
+    "call_to_action": ""
+  },
+  "consultation_template_notes": ""
+}
+
+## TRANSCRIPT
+
+[PASTE TRANSCRIPT HERE]`;
+}
+
+// =========================================================
+// UTILITIES
+// =========================================================
+function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function csvEsc(s) { return String(s || '').replace(/"/g, '""'); }
+function formatKey(k) { return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+
+function metaCard(label, value, cls) {
+  return `<div class="meta-card"><div class="label">${label}</div><div class="value ${cls || ''}">${esc(value || '—')}</div></div>`;
+}
+
+function toast(msg) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) { navigator.clipboard.writeText(text); }
+  else { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+}
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// =========================================================
+// DEMO DATA
+// =========================================================
+function getDemoData() {
+  return {
+    "consultation_meta": {
+      "client_name": "Jo Pyshorn",
+      "date": "2026-02-24",
+      "consultant_name": "Laura Price",
+      "duration_minutes": 53,
+      "outcome": "closed",
+      "deal_value": "£1,040 (2 days × £520)",
+      "deal_summary": "2-day kitchen and utility room edit. Monday/Tuesday following week. Organiser: Jenny. 50% deposit to secure."
+    },
+    "framework_scores": {
+      "bant": {
+        "budget": { "score": 5, "justification": "Price accepted without objection but budget never explicitly qualified. No anchoring against alternatives or cost of inaction." },
+        "authority": { "score": 9, "justification": "Sole decision-maker, sole occupant, paying directly. Clean authority." },
+        "need": { "score": 9, "justification": "Deeply felt and thoroughly articulated. Emotional overwhelm combined with practical dysfunction and a hard external deadline." },
+        "timeline": { "score": 8, "justification": "Kitchen refit at end of March creates hard deadline. Client asked about availability unprompted. Could have been strengthened by connecting delay to consequences." },
+        "total": 31,
+        "max": 40
+      },
+      "spin": {
+        "situation": { "score": 9, "justification": "Extensive situational context gathered: property layout, family history, what's in each room, kitchen refit plans, retirement timeline. Virtual tour excellent. Perhaps too much time spent here (35+ mins)." },
+        "problem": { "score": 8, "justification": "Problems well-surfaced both practical (can't access items, corner cupboards, every drawer full) and emotional (paralysis about mother's belongings, friends unhelpful)." },
+        "implication": { "score": 4, "justification": "Key gap. Rarely pushed into implication territory. When Jo said she doesn't sew because it's too hard to access — what does that cost her? When she uses 'crappy day plates' despite owning beautiful china — what's the daily impact?" },
+        "need_payoff": { "score": 5, "justification": "Some positive vision ('I love my new kitchen') but not systematically built. No picture of the transformed home, ideal morning routine, or hosting experience." },
+        "total": 26,
+        "max": 40
+      },
+      "neat": {
+        "need": { "score": 9, "justification": "Core need deeply understood: reclaim functional home from accumulated possessions during a period of life transition." },
+        "economic_impact": { "score": 3, "justification": "No quantification at all. Cost of inaction not explored: wasted kitchen investment if clutter returns, duplicate purchases, unused rooms, mental health impact of stress." },
+        "access_to_authority": { "score": 9, "justification": "Direct access to sole decision-maker throughout. No barriers." },
+        "timeline": { "score": 8, "justification": "Clear external deadline (kitchen refit). Client self-selected urgency. Good." },
+        "total": 29,
+        "max": 40
+      },
+      "challenger": {
+        "teach": { "score": 3, "justification": "Limited new insight offered. Some useful framing ('don't save your diamonds for best') but no data, case studies, or reframing insights." },
+        "tailor": { "score": 7, "justification": "Well-adapted to Jo's emotional state. Correctly identified kitchen as starting point (less emotional, time-pressured). Acknowledged sentimental complexity." },
+        "take_control": { "score": 4, "justification": "Largely led by Jo throughout. Close was reactive (Jo asked about timing) rather than proactively driven. Conversation wandered for 25+ mins before any structure." },
+        "total": 14,
+        "max": 30
+      },
+      "jtbd": {
+        "functional_job": { "score": 8, "identified_job": "Prepare kitchen for renovation by sorting, decluttering, and boxing items. Make utility room functional. Create a system so new kitchen contains only wanted items.", "justification": "Well-identified through the virtual tour and discussion. Laura understood the practical deliverable clearly." },
+        "emotional_job": { "score": 6, "identified_job": "Feel in control of her home again. Release the guilt and paralysis around her mother's possessions. Transition from caretaker identity to 'my home, my life' identity.", "justification": "Laura sensed this but didn't name it explicitly or build the consultation around resolving it. The emotional job is the real purchase driver here." },
+        "social_job": { "score": 3, "identified_job": "Not be perceived as a hoarder. Be proud when people visit. Have a home that reflects who she is, not her mother's accumulations.", "justification": "Jo said 'I'm sure I'm not a hoarder' and mentioned what visitors say about her house. Laura didn't explore the social dimension at all." },
+        "total": 17,
+        "max": 30
+      },
+      "sandler_pain": {
+        "surface_pain": { "score": 9, "justification": "Fully surfaced: too much stuff, every cupboard full, can't access things, kitchen refit creates urgency." },
+        "impact": { "score": 7, "justification": "Impact partially explored: can't use nice things, can't pursue hobbies (sewing), rooms not functional. But not quantified or systematically mapped." },
+        "personal_impact": { "score": 6, "justification": "Jo volunteered personal impact ('mentally doing my head in', 'everything is a bit of a catastrophe') but Laura didn't drill into this. What is the personal cost of living like this?" },
+        "emotional_weight": { "score": 5, "justification": "Grief, guilt, and identity loss are all present in Jo's story but Laura allowed them to surface naturally rather than drawing them out therapeutically. The deepest emotional weight — that keeping the items doesn't honour her mother and releasing them does — was touched on but not fully developed." },
+        "total": 27,
+        "max": 40
+      },
+      "composite": {
+        "total": 144,
+        "max": 220,
+        "percentage": 65
+      }
+    },
+    "extractions": {
+      "catalysts": [
+        {
+          "insight": "Kitchen renovation creating a hard deadline and forcing action",
+          "quote": "my immediate issue is the kitchen area, which I'm going to get this really beautiful kitchen... I don't want to box it all up and then just put it all back",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Marketing trigger: 'Renovating your kitchen? Don't just move the clutter — let us help you start fresh.' Target kitchen/bathroom renovation audiences."
+        },
+        {
+          "insight": "Parent with dementia entering care home — bedroom left untouched",
+          "quote": "she went into a care home because she broke her leg two years ago. but her bedroom, I didn't do anything with it. I don't know why.",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Sensitive marketing angle: 'When a parent moves into care, their room doesn't have to become a shrine. We can help you reclaim it, respectfully.' Partner with dementia charities."
+        },
+        {
+          "insight": "Approaching retirement — wanting house sorted while income still coming in",
+          "quote": "I would like to retire in the next year or two. So, I'm in the process of trying to get everything done in the house whilst I've still got money coming in.",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Pre-retirement targeting: 'Retiring soon? Get your home ready for the next chapter.' Financial planning / retirement lifestyle content partnerships."
+        },
+        {
+          "insight": "Bereavement and accumulated possessions from two merged households",
+          "quote": "my father died 15 years ago now. My mom moved in with me... we kind of mixed and matched. we got rid of some of my stuff.",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Life event trigger: 'When two households become one, things accumulate. We help you find the balance.' Target downsizing / bereavement audiences."
+        },
+        {
+          "insight": "Swedish Death Cleaning awareness — client has self-educated but can't execute alone",
+          "quote": "I see this Swedish death cleaning or whatever... it is just my mom and I. So I am not going to leave any of this stuff to anybody.",
+          "speaker": "Jo",
+          "confidence": "medium",
+          "suggested_use": "Content angle: 'Read about Swedish Death Cleaning but can't face doing it alone? That's where we come in.' SEO content targeting this term."
+        }
+      ],
+      "friction_points": [
+        {
+          "insight": "Beautiful possessions exist but are inaccessible — using inferior daily items instead",
+          "quote": "I've got these crappy plates that I use on a day basis and I just think I've got some really nice things",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Website copy: 'Stop saving the good stuff for 'one day'. We'll help you build a home where your favourite things are the things you use every day.'"
+        },
+        {
+          "insight": "Corner cupboards are a black hole — contents unknown",
+          "quote": "Hellish corner cupboard. No idea what's in there.",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Relatable social media content. 'We've all got that cupboard. The difference is, after we visit, you'll actually know what's in it.'"
+        },
+        {
+          "insight": "Friends offer to help but actually make it worse — wine, distraction, telling you to keep things",
+          "quote": "my friends will come and help but what will happen? we'll either open a bottle of wine and not get it done or... somebody 'that's really nice why don't you keep that'",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Key differentiator for website and ads: 'Your friends mean well. But they won't help you make the hard decisions. We will — kindly, efficiently, and without the wine.'"
+        },
+        {
+          "insight": "Hobbies abandoned because equipment is buried and inaccessible",
+          "quote": "I do sew and I would like to sew but it's not accessible... I'm not doing it because it's too difficult to get hold of",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Emotional impact angle: 'What hobbies have you given up because you can't get to the things you need? Let's change that.'"
+        },
+        {
+          "insight": "Emotional paralysis — knowing what needs to happen but unable to start",
+          "quote": "I'm overloaded and I don't know what to do where to start",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Hero section website copy: 'You know it needs doing. You just don't know where to start. That's exactly why we exist.'"
+        }
+      ],
+      "objections_and_fears": [
+        {
+          "insight": "Fear of regret — throwing away something meaningful",
+          "quote": "I can't get rid of it because I just feel like my mom put so much into it",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Website FAQ: 'Will I regret letting things go?' Address directly with testimonials from past clients who felt relief, not regret."
+        },
+        {
+          "insight": "Concern about pace — not wanting to be rushed through emotional decisions",
+          "quote": "I think this might be a gradual process. I think you might be going back a few times.",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Service page messaging: 'We go at your pace. No rush. No judgement. Just progress.'"
+        },
+        {
+          "insight": "Identity resistance — 'I'm not a hoarder' defence",
+          "quote": "I'm sure I'm not a hoarder, but I'm at that tipping point",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "CRITICAL positioning: never use the word 'hoarder' in any marketing. Frame as 'life got ahead of you' not 'you have a problem'. This is a major sensitivity."
+        }
+      ],
+      "emotional_drivers": [
+        {
+          "insight": "Guilt about mother's possessions — feeling that letting go dishonours her mother's effort and aspirations",
+          "quote": "my mom, she strove in her life for a better life. So, a lot of the stuff meant more to her, I guess. and that's sad.",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Deep emotional messaging for content marketing: 'Your parents worked hard for what they had. Honouring them doesn't mean keeping everything — it means living well.'"
+        },
+        {
+          "insight": "Wanting to reclaim identity — 'my kitchen' not 'our accumulated stuff'",
+          "quote": "I really could do with some help... so that when I get my beautiful kitchen... it will be my kitchen with the things that I can easily access",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Positioning: the service enables identity reclamation. 'Make your home yours again.'"
+        },
+        {
+          "insight": "Mental health impact — clutter is actively harming wellbeing",
+          "quote": "it's mentally doing my head in... everything is a bit of a catastrophe, and I need some help cuz this is really getting to me",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Wellbeing angle: 'Your home should support your mental health, not undermine it.' Consider partnerships with wellbeing platforms."
+        }
+      ],
+      "positioning_insights": [
+        {
+          "insight": "Anti-friend positioning: professional service vs well-meaning but ineffective friends",
+          "quote": "my friends will come and help but... we'll either open a bottle of wine and not get it done or... somebody 'that's really nice why don't you keep that'",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Core brand differentiator. Use in homepage, ads, and consultation scripts. This is potentially the single strongest positioning angle from this transcript."
+        },
+        {
+          "insight": "Permission to let go — the service provides external validation for decisions the client already knows they need to make",
+          "quote": "I know that... she was never going to come back, but it was just difficult",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Position the organiser as a 'permission giver' and 'gentle accountability partner'. This is what the client is really buying."
+        },
+        {
+          "insight": "The 'tidy but overwhelmed' persona — explicitly not a hoarder, just a person whose circumstances have overtaken them",
+          "quote": "I'm actually quite tidy. I'm not messy... I'm sure I'm not a hoarder, but I'm at that tipping point",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Define this as a named persona for marketing. 'You're not disorganised. Life just got ahead of you.' Avoid ANY implication of judgement in all copy."
+        }
+      ],
+      "case_study_moments": [
+        {
+          "insight": "Before: using 'crappy day plates' while beautiful china sits inaccessible in cupboards. After: eating off the Villeroy & Boch every Sunday with friends.",
+          "quote": "I've got these crappy plates that I use on a day basis and I just think I've got some really nice things",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Perfect case study vignette. Relatable, visual, emotionally resonant. 'Jo went from eating off chipped plates to using her mother's Villeroy & Boch every Sunday.'"
+        },
+        {
+          "insight": "Before: sewing machine buried in utility room, hobby abandoned. After: dedicated hobby space on middle floor, sewing regularly in retirement.",
+          "quote": "I do sew and I would like to sew but it's not accessible... I'm not doing it because it's too difficult to get hold of",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Case study angle about reclaiming hobbies and purpose, especially relevant for retirement audience."
+        },
+        {
+          "insight": "The 'everyone says it's a TARDIS' moment — house has enormous potential but is being wasted",
+          "quote": "everybody comes in and says, 'my god, it's so big. It's like a TARDIS'... The middle floor is such a big space. It's just ill-used.",
+          "speaker": "Jo",
+          "confidence": "medium",
+          "suggested_use": "Case study theme: 'unlocking the potential your home already has'. Before/after room photos would be powerful here."
+        }
+      ],
+      "discovery_questions": [
+        {
+          "insight": "Effective question: asking the client to prioritise which space bothers them most",
+          "quote": "Do you have a feeling of where you might want to... This is the one that just really annoys me on a day-to-day basis. This is the one that really weighs me down the most.",
+          "speaker": "Laura",
+          "confidence": "high",
+          "suggested_use": "Keep in template script. This is a strong prioritisation question.",
+          "status": "asked"
+        },
+        {
+          "insight": "Effective: asking to see the spaces via camera flip",
+          "quote": "It would be really helpful to... just have a quick look around",
+          "speaker": "Laura",
+          "confidence": "high",
+          "suggested_use": "Standardise in all virtual consultations. Transitions from abstract to concrete.",
+          "status": "asked"
+        },
+        {
+          "insight": "MISSED: What does success look like? What would your ideal Monday morning feel like in this house?",
+          "quote": "",
+          "speaker": "",
+          "confidence": "high",
+          "suggested_use": "Add to discovery question bank. Builds need-payoff and helps scope the engagement.",
+          "status": "missed"
+        },
+        {
+          "insight": "MISSED: What have you tried so far? What worked and what didn't?",
+          "quote": "",
+          "speaker": "",
+          "confidence": "high",
+          "suggested_use": "Surfaces failed alternatives and positions the professional service as the solution. Also reveals what the client already knows about their own patterns.",
+          "status": "missed"
+        },
+        {
+          "insight": "MISSED: What would it mean to you to walk into this kitchen and feel it's truly yours?",
+          "quote": "",
+          "speaker": "",
+          "confidence": "medium",
+          "suggested_use": "Emotional implication question. Bridges from functional to emotional job.",
+          "status": "missed"
+        },
+        {
+          "insight": "MISSED: If you don't do this now, what happens? What does this look like in six months?",
+          "quote": "",
+          "speaker": "",
+          "confidence": "high",
+          "suggested_use": "Cost of inaction question. Creates urgency and supports value justification.",
+          "status": "missed"
+        }
+      ],
+      "social_proof_opportunities": [
+        {
+          "insight": "Friends want to look at mother's clothes — social network is aware of and engaged with Jo's situation",
+          "quote": "some of my friends have gone, 'your mom's clothes are amazing. Can we come and have a look at them?'",
+          "speaker": "Jo",
+          "confidence": "medium",
+          "suggested_use": "Jo's social circle is aware of her situation. Post-engagement, friends will notice the transformation. High referral potential if followed up."
+        },
+        {
+          "insight": "Cleaner is a regular visitor who will see the transformation",
+          "quote": "my cleaner comes on a Monday... Even my cleaner just said the other day, you'll not have to buy anything for two years",
+          "speaker": "Jo",
+          "confidence": "medium",
+          "suggested_use": "Cleaners see inside many homes. Consider a referral programme targeted at cleaners and domestic staff."
+        }
+      ],
+      "upsell_signals": [
+        {
+          "insight": "Middle floor needs complete replanning — office, reading space, gym area, hobby zone",
+          "quote": "I would like an office space and I perhaps might even like a quiet reading space... I also would like to put some of my light weights and gym stuff",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Phase 2 engagement: room planning and organisation for the middle floor. Storage planning service."
+        },
+        {
+          "insight": "Top floor linen and bedroom clutter — 'the hugest tablecloths', airing cupboard overflowing",
+          "quote": "I've got an airing cupboard where the boiler which is full to the brim with stuff... spare duvets and stuff like this. Best in the world. I'm never going to use it.",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Phase 3 engagement. Top floor edit."
+        },
+        {
+          "insight": "Spain property mentioned — Jo said it's organised but bed linen 'over the top'",
+          "quote": "you can come out to Spain... I would say the bed linen is a bit over the top",
+          "speaker": "Jo",
+          "confidence": "low",
+          "suggested_use": "Long-shot upsell but worth noting. Second-home organisation could be a service offering."
+        },
+        {
+          "insight": "Heirloom chest with 14th century items, lace, fashion degree materials — needs specialist curation not just decluttering",
+          "quote": "I've got this old chest which is 14th century... lace made by my great grandmother... my mom's fashion degree stuff",
+          "speaker": "Jo",
+          "confidence": "medium",
+          "suggested_use": "Premium service opportunity: heritage item curation / archiving. Partnership with an archivist or conservator?"
+        }
+      ],
+      "client_language": [
+        {
+          "insight": "'Can't see the wood for the trees' — classic overwhelm metaphor",
+          "quote": "I can't see the wood for the trees",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Mirror in marketing. 'Can't see the wood for the trees? We'll help you find it.' Very relatable."
+        },
+        {
+          "insight": "'Reclaim the home' — Jo's own framing of the goal",
+          "quote": "I'm at this point now where I need to kind of reclaim the home",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Use 'reclaim' as a brand verb. 'Reclaim your home. Reclaim your space. Reclaim your peace of mind.'"
+        },
+        {
+          "insight": "'Mentally doing my head in' — authentic, un-PR-filtered expression of impact",
+          "quote": "it's mentally doing my head in",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Testimonial language. Real people don't say 'causing me cognitive overload'. They say this. Use authentic language in copy."
+        },
+        {
+          "insight": "'The cupboard of hell' — describing the under-stairs cupboard",
+          "quote": "this is the cupboard of hell under the stairs. Everybody has one of these",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Social media / light-hearted content: 'Everyone's got a cupboard of hell. Show us yours.' Engagement-driving content."
+        },
+        {
+          "insight": "'Tipping point' — acknowledging she's at a threshold",
+          "quote": "I'm at that tipping point of, my god, I don't know what to do with everything",
+          "speaker": "Jo",
+          "confidence": "high",
+          "suggested_use": "Messaging for the awareness-to-action transition: 'If you've hit that tipping point, we're here to help.'"
+        }
+      ]
+    },
+    "executive_summary": "This was a successful consultation that closed for a 2-day engagement (£1,040). The client was highly motivated with overlapping life transitions (parent's dementia/care, approaching retirement, kitchen renovation) creating urgency. Laura demonstrated strong empathetic listening and built excellent rapport. The main gaps were in conversation structure (first 25 mins unguided), value quantification (no anchoring before price), social proof (no case studies or testimonials referenced), and proactive closing (the client drove the close). The JTBD analysis reveals the emotional and social jobs are underserved — Jo is buying permission to let go and identity reclamation, not just 'tidying'. The Sandler Pain analysis shows surface pain was well-identified but deeper emotional weight (grief, guilt, identity) was touched on but not therapeutically developed. For a high-intent inbound lead this approach worked, but on less motivated prospects these structural gaps would cost deals.",
+    "top_3_improvements": [
+      { "title": "Structure the consultation with an agenda", "description": "Introduce a 3-phase structure at the start: understand situation (10 mins), view spaces (15 mins), discuss how we help (10 mins). This keeps calls to 30-35 mins and ensures commercial elements aren't compressed.", "priority": "high" },
+      { "title": "Build a value bridge before stating the price", "description": "Summarise pain, goal, and deliverable before presenting the day rate. Anchor against alternatives (doing it alone, hiring a skip, lost time). Frame price as investment, not cost.", "priority": "high" },
+      { "title": "Develop and deploy social proof throughout", "description": "Weave in anonymised client examples during the consultation. 'We worked with someone in a very similar situation recently...' builds confidence and normalises the purchase.", "priority": "medium" }
+    ],
+    "case_study_draft": {
+      "headline": "From 'crappy day plates' to Sunday lunches on the Villeroy & Boch: how Jo reclaimed her kitchen — and her peace of mind",
+      "client_situation": "Jo lives in a three-storey London townhouse that had gradually filled with two households' worth of possessions after her mother moved in 15 years ago. Every cupboard was full. Beautiful china sat inaccessible while Jo ate off chipped plates. A sewing machine she loved was buried in the utility room. Her home — which visitors described as 'like a TARDIS' for its size — wasn't working for her.",
+      "catalyst": "A new kitchen was being fitted at the end of March. Jo didn't want to just box everything up and put it all back. She also knew retirement was approaching and wanted her home sorted while she still had income to invest in it.",
+      "challenge": "The possessions weren't just clutter — they were her mother's life. Fine china chosen with care, crystal glassware for every occasion, fashion from a career in design. Jo felt guilty letting go of items that represented her mother's aspirations for a better life. Friends who offered to help ended up opening wine and telling her to keep everything.",
+      "approach": "We started with the kitchen and utility room — practical spaces where decisions felt less emotionally charged. Jenny worked with Jo over two days, pulling everything out, sorting by category, and creating clear choices. What do you use? What do you love? What's just taking up space? The pace was Jo's. There was no pressure and no judgement — just steady, supported progress.",
+      "key_quote": "I've got some really nice things. I just can't see the wood for the trees.",
+      "outcome": "Jo's new kitchen now contains only the things she actually uses and loves. The Villeroy & Boch comes out every Sunday for friends. The sewing machine has a proper home on the middle floor. And the 'cupboard of hell' under the stairs? Even that got sorted.",
+      "call_to_action": "If your home has got ahead of you, we can help you find the wood for the trees. Book a free consultation."
+    },
+    "consultation_template_notes": "Laura's empathy and rapport are genuine strengths to preserve. The main structural improvement is adding a lightweight framework: agenda-setting at the start, discovery questions in the middle, and a value bridge before pricing. The virtual tour / camera flip should be standardised. Discovery question bank should include: 'What does success look like?', 'What have you tried?', 'What's your biggest concern about the process?', 'If you don't do this now, what happens in six months?' Social proof should be woven in, not bolted on — brief anonymised examples during the conversation, not a formal testimonials section."
+  };
+}
+</script>
+</body>
+</html>

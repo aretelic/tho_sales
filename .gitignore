@@ -1,0 +1,7 @@
+node_modules/
+.env
+db/database.sqlite
+db/database.sqlite-journal
+.DS_Store
+*.log
+useful.md

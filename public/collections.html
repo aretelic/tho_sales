@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collections — Consultation Intelligence</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div>
+        <h1>Collections</h1>
+        <div class="header-meta">Approved extractions ready to use</div>
+      </div>
+      <div class="header-actions">
+        <a href="/api/collections/export?format=csv" class="btn btn-sm">↓ CSV</a>
+        <a href="/api/collections/export?format=json" class="btn btn-sm">↓ JSON</a>
+        <a href="/case-studies.html" class="btn btn-ghost">Case Studies</a>
+        <a href="/" class="btn btn-ghost">← Dashboard</a>
+      </div>
+    </div>
+
+    <div id="statsBar"></div>
+
+    <div class="collections-controls">
+      <div class="view-toggle">
+        <button class="filter-btn active" id="viewByCat" onclick="window.setView('category')">By Category</button>
+        <button class="filter-btn" id="viewByDest" onclick="window.setView('destination')">By Destination</button>
+      </div>
+      <select id="filterSelect" class="filter-select" onchange="window.applyFilter()">
+        <option value="">All</option>
+      </select>
+    </div>
+
+    <div id="collectionsContent"></div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script type="module" src="/js/app.js"></script>
+  <script type="module" src="/js/collections.js"></script>
+</body>
+</html>
