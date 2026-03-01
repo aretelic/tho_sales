@@ -10,7 +10,15 @@
   <div class="app">
     <div class="header">
       <h1>Create Consultation</h1>
-      <a href="/" class="btn btn-ghost">← Back to Dashboard</a>
+      <div class="header-actions">
+        <a href="/" class="btn btn-ghost">← Back to Dashboard</a>
+        <div class="user-widget">
+          <span id="userDisplayName"></span>
+          <form action="/auth/logout" method="POST">
+            <button type="submit" class="btn btn-ghost btn-sm">Sign out</button>
+          </form>
+        </div>
+      </div>
     </div>
 
     <div class="form-section">

@@ -13,7 +13,16 @@
         <h1 id="consultationTitle">Loading...</h1>
         <div class="header-meta" id="consultationMeta"></div>
       </div>
-      <a href="/" class="btn btn-ghost">← Back to Dashboard</a>
+      <div class="header-actions">
+        <a href="/" class="btn btn-ghost">← Back to Dashboard</a>
+        <button id="headerDeleteBtn" class="btn btn-ghost btn-sm" style="color:var(--red)">Delete</button>
+        <div class="user-widget">
+          <span id="userDisplayName"></span>
+          <form action="/auth/logout" method="POST">
+            <button type="submit" class="btn btn-ghost btn-sm">Sign out</button>
+          </form>
+        </div>
+      </div>
     </div>
 
     <div id="statusBar" class="status-bar"></div>
@@ -28,6 +37,7 @@
     <!-- Scorecard Tab -->
     <div class="tab-panel active" id="panel-scorecard">
       <div id="scorecardContent"></div>
+      <div id="nextStepsContainer"></div>
     </div>
 
     <!-- Extractions Tab -->

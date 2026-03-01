@@ -13,8 +13,20 @@
       <div class="header-actions">
         <a href="/collections.html" class="btn btn-ghost">Collections</a>
         <a href="/case-studies.html" class="btn btn-ghost">Case Studies</a>
+        <a href="/drive-import.html" class="btn btn-ghost">↓ Import from Drive</a>
         <a href="/create.html" class="btn btn-primary">+ New Consultation</a>
+        <div class="user-widget">
+          <span id="userDisplayName"></span>
+          <form action="/auth/logout" method="POST">
+            <button type="submit" class="btn btn-ghost btn-sm">Sign out</button>
+          </form>
+        </div>
       </div>
+    </div>
+
+    <div class="calendar-section">
+      <h2>Upcoming</h2>
+      <div id="calendarEvents"></div>
     </div>
 
     <div class="dashboard-section">

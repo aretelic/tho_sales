@@ -18,6 +18,12 @@
         <a href="/api/collections/export?format=json" class="btn btn-sm">↓ JSON</a>
         <a href="/case-studies.html" class="btn btn-ghost">Case Studies</a>
         <a href="/" class="btn btn-ghost">← Dashboard</a>
+        <div class="user-widget">
+          <span id="userDisplayName"></span>
+          <form action="/auth/logout" method="POST">
+            <button type="submit" class="btn btn-ghost btn-sm">Sign out</button>
+          </form>
+        </div>
       </div>
     </div>
 

@@ -9,6 +9,17 @@ let currentFilter = 'all';
 let caseStudyDraft = null;
 const commentCache = new Map();
 
+let capsuleState = {
+  partyId: null,
+  opportunityId: null,
+  opportunityName: null,
+  linkedName: null,
+  searchResults: [],
+  searching: false,
+  logging: false,
+  logged: false,
+};
+
 // Get consultation ID from URL
 const params = new URLSearchParams(window.location.search);
 const consultationId = params.get('id');
@@ -48,6 +59,7 @@ async function loadConsultation() {
       await loadExtractions();
       await loadCaseStudy();
       renderScorecard();
+      renderNextSteps();
       renderExtractions();
       renderTranscript();
       renderCaseStudy();
@@ -762,6 +774,223 @@ window.deleteComment = async function(extractionId, commentId) {
     toast('Failed to delete comment', 'error');
   }
 };
+
+// --- Next Steps / Capsule CRM ---
+
+function renderNextSteps() {
+  const container = document.getElementById('nextStepsContainer');
+  if (!container) return;
+
+  // Sync capsuleState from current consultation data on first render
+  if (consultation.capsule_party_id && !capsuleState.partyId) {
+    capsuleState.partyId = consultation.capsule_party_id;
+    capsuleState.opportunityId = consultation.capsule_opportunity_id || null;
+  }
+
+  const outcome = consultation.outcome || null;
+  const dealValue = consultation.deal_value || '';
+
+  const outcomes = [
+    { value: 'lost', label: 'No Show / Qualified Out', warn: true },
+    { value: 'follow_up_required', label: 'Send Proposal' },
+    { value: 'closed', label: 'Close / Invoice' },
+  ];
+
+  let html = '<div class="next-steps-panel">';
+  html += '<h3>Next Steps</h3>';
+
+  // Outcome buttons
+  html += '<div class="ns-outcome-row">';
+  for (const o of outcomes) {
+    const isActive = outcome === o.value;
+    const cls = isActive ? (o.warn ? 'ns-outcome-btn active-warn' : 'ns-outcome-btn active') : 'ns-outcome-btn';
+    html += `<button class="${cls}" onclick="window.setOutcome('${o.value}')">${esc(o.label)}</button>`;
+  }
+  html += '</div>';
+
+  // Deal value (hide for no-show/lost)
+  if (outcome !== 'lost') {
+    html += `<div class="ns-deal-row">
+      <label for="nsDealValue">Deal value</label>
+      <input type="text" id="nsDealValue" class="ns-deal-input" value="${esc(dealValue)}" placeholder="e.g. £1,500" onblur="window.saveDealValue()">
+    </div>`;
+  }
+
+  html += '<hr class="ns-divider">';
+
+  // Capsule CRM section
+  html += '<div class="ns-capsule-label">Capsule CRM</div>';
+
+  if (capsuleState.partyId) {
+    // Linked contact
+    html += `<div class="ns-linked-contact">
+      <div>
+        <div class="ns-linked-name">${esc(capsuleState.linkedName || `Contact #${capsuleState.partyId}`)}</div>
+        ${capsuleState.opportunityName ? `<div class="ns-linked-opp">Opportunity: ${esc(capsuleState.opportunityName)}</div>` : ''}
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="window.unlinkCapsule()">Unlink</button>
+    </div>`;
+  } else {
+    // Search form
+    html += `<div class="ns-search-row">
+      <input type="email" id="nsCapsuleEmail" class="ns-email-input" placeholder="Search by email address">
+      <button class="btn btn-sm btn-primary" onclick="window.searchCapsule()" ${capsuleState.searching ? 'disabled' : ''}>
+        ${capsuleState.searching ? 'Searching…' : 'Search'}
+      </button>
+    </div>`;
+
+    if (capsuleState.searchResults.length > 0) {
+      html += '<div class="ns-party-list">';
+      for (const party of capsuleState.searchResults) {
+        html += `<div class="ns-party-card">
+          <div class="ns-party-info">
+            <div class="ns-party-name">${esc(party.name)}</div>
+            ${party.emailAddress ? `<div class="ns-party-email">${esc(party.emailAddress)}</div>` : ''}
+            ${party.opportunities?.length ? `<div class="ns-party-opps">${party.opportunities.length} opportunity(s)</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            <button class="btn btn-sm btn-primary" onclick="window.linkCapsuleContact(${party.id}, null, ${JSON.stringify(party.name)}, null)">Link</button>
+            ${party.opportunities?.map(o =>
+              `<button class="btn btn-sm" onclick="window.linkCapsuleContact(${party.id}, ${o.id}, ${JSON.stringify(party.name)}, ${JSON.stringify(o.name)})" style="font-size:11px">+ ${esc(o.name)}</button>`
+            ).join('') || ''}
+          </div>
+        </div>`;
+      }
+      html += '</div>';
+    } else if (capsuleState.searchResults !== null && !capsuleState.searching) {
+      // show nothing if no search yet
+    }
+  }
+
+  const logDisabled = !capsuleState.partyId || capsuleState.logging;
+  html += `<button class="ns-log-btn${capsuleState.logged ? ' logged' : ''}" onclick="window.logToCapsule()" ${logDisabled ? 'disabled' : ''}>
+    ${capsuleState.logged ? '✓ Logged to Capsule' : capsuleState.logging ? 'Logging…' : 'Log note to Capsule'}
+  </button>`;
+
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+window.setOutcome = async function(value) {
+  try {
+    const updated = await api(`/consultations/${consultationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ outcome: value }),
+    });
+    consultation = { ...consultation, outcome: updated.outcome };
+    renderNextSteps();
+  } catch {
+    toast('Failed to update outcome', 'error');
+  }
+};
+
+window.saveDealValue = async function() {
+  const input = document.getElementById('nsDealValue');
+  const value = input?.value.trim() || null;
+  try {
+    await api(`/consultations/${consultationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ deal_value: value }),
+    });
+    consultation = { ...consultation, deal_value: value };
+    toast('Deal value saved', 'success');
+  } catch {
+    toast('Failed to save deal value', 'error');
+  }
+};
+
+window.searchCapsule = async function() {
+  const email = document.getElementById('nsCapsuleEmail')?.value.trim();
+  if (!email) {
+    toast('Enter an email address to search', 'error');
+    return;
+  }
+  capsuleState.searching = true;
+  capsuleState.searchResults = [];
+  renderNextSteps();
+
+  try {
+    const results = await api(`/capsule/search?email=${encodeURIComponent(email)}`);
+    capsuleState.searchResults = results || [];
+  } catch {
+    toast('Capsule search failed', 'error');
+    capsuleState.searchResults = [];
+  } finally {
+    capsuleState.searching = false;
+    renderNextSteps();
+  }
+};
+
+window.linkCapsuleContact = async function(partyId, opportunityId, partyName, opportunityName) {
+  try {
+    await api(`/consultations/${consultationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ capsule_party_id: partyId, capsule_opportunity_id: opportunityId || null }),
+    });
+    consultation = { ...consultation, capsule_party_id: partyId, capsule_opportunity_id: opportunityId || null };
+    capsuleState.partyId = partyId;
+    capsuleState.opportunityId = opportunityId || null;
+    capsuleState.linkedName = partyName;
+    capsuleState.opportunityName = opportunityName || null;
+    capsuleState.searchResults = [];
+    capsuleState.logged = false;
+    renderNextSteps();
+    toast('Contact linked', 'success');
+  } catch {
+    toast('Failed to link contact', 'error');
+  }
+};
+
+window.unlinkCapsule = async function() {
+  try {
+    await api(`/consultations/${consultationId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ capsule_party_id: null, capsule_opportunity_id: null }),
+    });
+    consultation = { ...consultation, capsule_party_id: null, capsule_opportunity_id: null };
+    capsuleState.partyId = null;
+    capsuleState.opportunityId = null;
+    capsuleState.linkedName = null;
+    capsuleState.opportunityName = null;
+    capsuleState.logged = false;
+    renderNextSteps();
+  } catch {
+    toast('Failed to unlink contact', 'error');
+  }
+};
+
+window.logToCapsule = async function() {
+  if (!capsuleState.partyId) return;
+  capsuleState.logging = true;
+  renderNextSteps();
+
+  try {
+    await api('/capsule/log', {
+      method: 'POST',
+      body: JSON.stringify({ consultationId }),
+    });
+    capsuleState.logged = true;
+    toast('Note logged to Capsule', 'success');
+  } catch (error) {
+    toast(`Failed to log to Capsule: ${error.message}`, 'error');
+  } finally {
+    capsuleState.logging = false;
+    renderNextSteps();
+  }
+};
+
+document.getElementById('headerDeleteBtn').addEventListener('click', async () => {
+  const name = consultation?.client_name || 'this consultation';
+  if (!confirm(`Delete "${name}"? This will permanently remove all extractions, comments and case study drafts.`)) return;
+  try {
+    await api(`/consultations/${consultationId}`, { method: 'DELETE' });
+    toast('Deleted', 'success');
+    window.location.href = '/';
+  } catch (error) {
+    toast(`Delete failed: ${error.message}`, 'error');
+  }
+});
 
 // Initial load
 loadConsultation();

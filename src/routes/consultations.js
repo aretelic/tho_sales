@@ -77,6 +77,40 @@ router.post('/', (req, res, next) => {
   }
 });
 
+// PATCH /api/consultations/:id - Update outcome / deal value / Capsule link
+router.patch('/:id', (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const consultation = getOne('SELECT * FROM consultations WHERE id = ?', [id]);
+    if (!consultation) {
+      return res.status(404).json({ error: 'Consultation not found' });
+    }
+
+    // Only update fields explicitly present in the request body (supports null to clear)
+    const allowed = ['outcome', 'deal_value', 'capsule_party_id', 'capsule_opportunity_id'];
+    const sets = [];
+    const vals = [];
+    for (const field of allowed) {
+      if (field in req.body) {
+        sets.push(`${field} = ?`);
+        vals.push(req.body[field] ?? null);
+      }
+    }
+    if (sets.length === 0) return res.json(consultation);
+
+    sets.push('updated_at = ?');
+    vals.push(new Date().toISOString());
+    vals.push(id);
+
+    run(`UPDATE consultations SET ${sets.join(', ')} WHERE id = ?`, vals);
+
+    const updated = getOne('SELECT * FROM consultations WHERE id = ?', [id]);
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // POST /api/consultations/:id/analyse - Trigger analysis
 router.post('/:id/analyse', async (req, res, next) => {
   try {
@@ -158,6 +192,17 @@ router.post('/:id/analyse', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+// DELETE /api/consultations/:id - Delete consultation and all related data
+router.delete('/:id', (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const consultation = getOne('SELECT id FROM consultations WHERE id = ?', [id]);
+    if (!consultation) return res.status(404).json({ error: 'Consultation not found' });
+    run('DELETE FROM consultations WHERE id = ?', [id]);
+    res.status(204).end();
+  } catch (error) { next(error); }
 });
 
 export default router;

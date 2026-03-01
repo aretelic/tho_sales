@@ -15,6 +15,11 @@ export async function api(endpoint, options = {}) {
   try {
     const response = await fetch(url, config);
 
+    if (response.status === 401) {
+      window.location.href = '/login?returnTo=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || `HTTP ${response.status}`);
@@ -26,6 +31,22 @@ export async function api(endpoint, options = {}) {
     throw error;
   }
 }
+
+// Populate user widget on page load
+async function initUserWidget() {
+  const nameEl = document.getElementById('userDisplayName');
+  if (!nameEl) return;
+  try {
+    const res = await fetch('/auth/me', { headers: { 'Cache-Control': 'no-store' } });
+    if (!res.ok) return;
+    const user = await res.json();
+    nameEl.textContent = user.displayName || user.email;
+  } catch {
+    // Non-critical — widget stays empty
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initUserWidget);
 
 // Toast notifications
 export function toast(message, type = 'info') {
